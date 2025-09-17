@@ -20,10 +20,14 @@ def extract_embeddings_for_keras(input_folder, output_folder, segment_duration=3
     """
     os.makedirs(output_folder, exist_ok=True)
 
+    # Set custom model path
+    custom_model_path = os.path.abspath(os.path.join(os.path.dirname(
+        __file__), '..', 'models', 'BirdNET_GLOBAL_6K_V2.4_Model_FP32.tflite'))
     cfg.set_config({
         "SIG_LENGTH": segment_duration,
         "SIG_OVERLAP": overlap,
-        "BATCH_SIZE": 1
+        "BATCH_SIZE": 1,
+        "MODEL_PATH": custom_model_path
     })
 
     audio_files = []
@@ -67,8 +71,8 @@ def extract_embeddings_for_keras(input_folder, output_folder, segment_duration=3
 
 # Example usage
 if __name__ == "__main__":
-    input_folder = r"C:\Users\gbida\Projects\anuraset\datasets\anuraset\audio"
-    output_folder = r"C:\Users\gbida\Projects\anurabird\data_test\embeddings"
+    input_folder = r"C:\Users\gbida\Projects\anuraset\datasets\test"
+    output_folder = r"results"
     segment_duration = 3  # seconds
     overlap = 1         # seconds, for 50% overlap
 
