@@ -7,9 +7,6 @@ import sys
 import numpy as np
 import json
 
-# Add BirdNET-Analyzer to the Python path
-sys.path.append(r"c:\Users\gbida\BirdNET-Analyzer")
-
 
 def extract_embeddings_for_keras(input_folder, output_folder, segment_duration=3, overlap=0.0):
     """
