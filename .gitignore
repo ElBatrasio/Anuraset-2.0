@@ -1,3 +1,5 @@
 # Ignore some files
 results/predictions_with_timestamps_and_scores_20250912_142843.csv
 results/manual_validation_subset.csv
+results/*
+!results/.gitkeep
