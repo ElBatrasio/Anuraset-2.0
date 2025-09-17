@@ -14,7 +14,7 @@ Key contributions include:
 ```bash
 git clone https://github.com/ElBatrasio/Frog-party_detector.git
 ```
-3.Create an environment and install requirements
+3. Create an environment and install requirements
 ```bash
 cd Frog-party_detector
 conda create -n Frog-party_detector python=3.11 -y
