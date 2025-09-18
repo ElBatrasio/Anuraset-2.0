@@ -32,7 +32,7 @@ The names of the folders must NOT contain spaces between words, use a low bar "_
 # 5. Train the model
 Train the MLP using embeddings as input. You have to specify just the path to the csv file containing the labels per each sample (unless you specified the output folder for the BirdNET_embeddings script to be another but the default). If the csv with samples is correctly structured the script will correctly append each sample with its corresponding multi-label. You can set the proportion of data destined to train, validation and testing; if not the default is 70% training and 15% validation and testing.
 ```bash
-python scripts/MLP_classifier.py --labels_csv path/to/labels.csv --train_ratio 0.6 --val_ratio 0.2 --test_ratio 0.2
+python scripts/MLP_classifier.py --labels_csv "path/to/labels.csv" --train_ratio 0.6 --val_ratio 0.2 --test_ratio 0.2
 ```
 # 6. Predict on new data
 Use the model to predict in new data. You can add your data to the data/new_data folder inside the main Frog_party_detector folder which is the default folder, if not specify the input folder like in the embeddings extraction usage. You can manually set the threshold for decision making, if not the default is 0.5
