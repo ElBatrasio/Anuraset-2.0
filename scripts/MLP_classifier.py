@@ -30,12 +30,20 @@ if __name__ == "__main__":
         description="Train and evaluate MLP classifier for multilabel audio classification.")
     parser.add_argument('--labels_csv', type=str, required=True,
                         help='Path to the CSV file with audio file labels.')
-    parser.add_argument('--timestamps_json', type=str,
-                        required=True, help='Path to the timestamps JSON file.')
-    parser.add_argument('--embeddings_npy', type=str,
-                        required=True, help='Path to the embeddings NPY file.')
-    parser.add_argument('--model_folder', type=str, required=True,
-                        help='Folder to save trained models and reports.')
+    parser.add_argument('--embeddings_folder', type=str, default='data/train_embeddings/', required=False,
+                        help="Folder containing embeddings.npy and timestamps.json (default: 'data/train_embeddings/').")
+    parser.add_argument('--train_ratio', type=float, default=0.7, required=False,
+                        help="Proportion of data for training (default: 0.7).")
+    parser.add_argument('--val_ratio', type=float, default=0.15, required=False,
+                        help="Proportion of data for validation (default: 0.15).")
+    parser.add_argument('--test_ratio', type=float, default=0.15, required=False,
+                        help="Proportion of data for testing (default: 0.15).")
+    parser.add_argument('--timestamps_json', type=str, required=False,
+                        help='Path to the timestamps JSON file. If not specified, uses embeddings_folder/timestamps.json.')
+    parser.add_argument('--embeddings_npy', type=str, required=False,
+                        help='Path to the embeddings NPY file. If not specified, uses embeddings_folder/embeddings.npy.')
+    parser.add_argument('--model_folder', type=str, default='models/', required=False,
+                        help="Folder to save trained models and reports (default: 'models/').")
     args = parser.parse_args()
 
     # Set working directory to project root
@@ -57,8 +65,15 @@ if __name__ == "__main__":
         for _, row in labels_df.iterrows()
     }
 
+    # Determine embeddings and timestamps paths
+    embeddings_folder = args.embeddings_folder
+    timestamps_path = args.timestamps_json if args.timestamps_json else os.path.join(
+        embeddings_folder, 'timestamps.json')
+    embeddings_path = args.embeddings_npy if args.embeddings_npy else os.path.join(
+        embeddings_folder, 'embeddings.npy')
+
     # Load the JSON file
-    with open(args.timestamps_json, 'r') as f:
+    with open(timestamps_path, 'r') as f:
         timestamps = json.load(f)
 
     # Extract labels for each audio file in the JSON file
@@ -74,7 +89,7 @@ if __name__ == "__main__":
     labels = mlb.fit_transform(labels)
 
     # Load embeddings
-    embeddings = np.load(args.embeddings_npy)
+    embeddings = np.load(embeddings_path)
 
     # Normalize embeddings
     embeddings = (embeddings - np.min(embeddings)) / \
@@ -88,10 +103,19 @@ if __name__ == "__main__":
 
     # Get unique audio files and split them
     unique_files = sorted(set(audio_files))
-    train_files, temp_files = train_test_split(
-        unique_files, test_size=0.3, random_state=42)
-    val_files, test_files = train_test_split(
-        temp_files, test_size=0.5, random_state=42)
+    train_ratio = args.train_ratio
+    val_ratio = args.val_ratio
+    test_ratio = args.test_ratio
+    assert abs(train_ratio + val_ratio + test_ratio -
+               1.0) < 1e-6, "Train, validation, and test ratios must sum to 1.0"
+
+    # First split off test set
+    train_val_files, test_files = train_test_split(
+        unique_files, test_size=test_ratio, random_state=42)
+    # Then split train/val
+    val_adjusted = val_ratio / (train_ratio + val_ratio)
+    train_files, val_files = train_test_split(
+        train_val_files, test_size=val_adjusted, random_state=42)
 
     # Assign each sample to a split based on its audio file
     train_idx = [i for i, f in enumerate(audio_files) if f in train_files]

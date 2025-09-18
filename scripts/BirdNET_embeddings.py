@@ -72,12 +72,15 @@ def extract_embeddings_for_keras(input_folder, output_folder, segment_duration=3
 
 # Command-line interface
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser(
-        description="Extract BirdNET embeddings from audio files.")
+        description="Extract BirdNET embeddings from audio files.\n\n"
+                    "Recommended: Use a dedicated output folder such as 'results/embeddings/'. "
+                    "All output files (embeddings.npy, timestamps.json) will be saved there.")
     parser.add_argument('--input_folder', type=str, required=True,
                         help='Path to the folder containing audio files.')
-    parser.add_argument('--output_folder', type=str, required=True,
-                        help='Path to save the extracted embeddings.')
+    parser.add_argument('--output_folder', type=str, default='data/train_embeddings/', required=False,
+                        help="Path to a dedicated output folder for embeddings and timestamps (e.g., 'data/train_embeddings/'). If not specified, defaults to 'data/train_embeddings/'.")
     parser.add_argument('--segment_duration', type=int, default=3,
                         help='Duration (in seconds) of each segment.')
     parser.add_argument('--overlap', type=float, default=0.0,

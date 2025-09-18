@@ -6,6 +6,7 @@ import pandas as pd
 import glob
 import os
 import datetime
+import argparse
 
 # %% Define function to get the latest file
 
@@ -26,74 +27,87 @@ def get_unique_path(filepath):
     return f"{base}_{timestamp}{ext}"
 
 
-# %% Load the trained model and encoder
-model_path = get_latest_file(
-    r"models\mlp_model_multilabel*.pkl")
-encoder_path = get_latest_file(
-    r"models\mlb_encoder*.pkl")
+# Command-line interface
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Load trained MLP model and make predictions on new embeddings.")
+    parser.add_argument('--model_folder', type=str, default='models/', required=False,
+                        help="Folder containing trained model and encoder (default: 'models/').")
+    parser.add_argument('--embeddings_folder', type=str, default='data/new_data/', required=False,
+                        help="Folder containing embeddings.npy and timestamps.json (default: 'data/new_data/').")
+    parser.add_argument('--output_csv', type=str, default='results/predictions_with_timestamps_and_scores.csv', required=False,
+                        help="Path to output CSV file (default: 'results/predictions_with_timestamps_and_scores.csv').")
+    parser.add_argument('--embedding_min', type=str, default='models/embedding_min.npy', required=False,
+                        help="Path to embedding_min.npy (default: 'models/embedding_min.npy').")
+    parser.add_argument('--embedding_max', type=str, default='models/embedding_max.npy', required=False,
+                        help="Path to embedding_max.npy (default: 'models/embedding_max.npy').")
+    parser.add_argument('--threshold', type=float, default=0.5, required=False,
+                        help="Threshold for multilabel prediction (default: 0.5).")
+    args = parser.parse_args()
 
-mlp = joblib.load(model_path)
-mlb = joblib.load(encoder_path)
-print(f"Loaded model: {model_path}")
-print(f"Loaded encoder: {encoder_path}")
+    # Find latest model and encoder
+    model_path = get_latest_file(os.path.join(
+        args.model_folder, 'mlp_model_multilabel*.pkl'))
+    encoder_path = get_latest_file(os.path.join(
+        args.model_folder, 'mlb_encoder*.pkl'))
+    mlp = joblib.load(model_path)
+    mlb = joblib.load(encoder_path)
+    print(f"Loaded model: {model_path}")
+    print(f"Loaded encoder: {encoder_path}")
 
-# %% Load new embeddings
-new_embeddings = np.load(
-    r"C:\Users\gbida\Projects\anurabird\data\extra\embeddings\embeddings.npy")
+    # Load new embeddings
+    embeddings_path = os.path.join(args.embeddings_folder, 'embeddings.npy')
+    new_embeddings = np.load(embeddings_path)
 
-emb_min = np.load('embedding_min.npy')
-emb_max = np.load('embedding_max.npy')
-new_embeddings = (new_embeddings - emb_min) / (emb_max - emb_min)
+    # Load normalization min/max
+    emb_min = np.load(args.embedding_min)
+    emb_max = np.load(args.embedding_max)
+    new_embeddings = (new_embeddings - emb_min) / (emb_max - emb_min)
 
-# %% Load timestamps
-with open(r"C:\Users\gbida\Projects\anurabird\data\extra\embeddings\timestamps.json") as f:
-    timestamps = json.load(f)
+    # Load timestamps
+    timestamps_path = os.path.join(args.embeddings_folder, 'timestamps.json')
+    with open(timestamps_path) as f:
+        timestamps = json.load(f)
 
-# %% Predict probabilities for each class
-proba = mlp.predict_proba(new_embeddings)
-proba_matrix = np.column_stack(
-    [p[:, 1] if p.ndim == 2 and p.shape[1] > 1 else p.ravel() for p in proba]
-)
+    # Predict probabilities for each class
+    proba = mlp.predict_proba(new_embeddings)
+    proba_matrix = np.column_stack([
+        p[:, 1] if p.ndim == 2 and p.shape[1] > 1 else p.ravel() for p in proba
+    ])
 
-# %% Ensure correct shape
-if proba_matrix.shape[1] != len(mlb.classes_):
-    proba_matrix = proba_matrix.T
+    # Ensure correct shape
+    if proba_matrix.shape[1] != len(mlb.classes_):
+        proba_matrix = proba_matrix.T
+    print("proba_matrix shape:", proba_matrix.shape)
 
-# Should be (n_samples, n_classes)
-print("proba_matrix shape:", proba_matrix.shape)
+    # Use threshold to get predictions
+    threshold = args.threshold
+    predictions = (proba_matrix >= threshold).astype(int)
+    print("predictions shape:", predictions.shape)
 
-# %% Use threshold to get predictions
-threshold = 0.5
-predictions = (proba_matrix >= threshold).astype(int)
-# Should be (n_samples, n_classes)
-print("predictions shape:", predictions.shape)
+    decoded = mlb.inverse_transform(predictions)
+    print("decoded length:", len(decoded))
+    print("timestamps length:", len(timestamps))
 
-decoded = mlb.inverse_transform(predictions)
-print("decoded length:", len(decoded))
-print("timestamps length:", len(timestamps))
+    # Prepare results for CSV
+    results = []
+    class_names = mlb.classes_
+    for i, (labels, ts, probs) in enumerate(zip(decoded, timestamps, proba_matrix)):
+        row = {
+            "sample_index": i,
+            "audio_file": ts.get("file", ""),
+            "start": ts.get("start", ""),
+            "end": ts.get("end", ""),
+            "predicted_species": ", ".join(labels) if labels else ""
+        }
+        for cname, score in zip(class_names, probs):
+            row[f"score_{cname}"] = score
+        results.append(row)
 
-# %% Prepare results for CSV
-results = []
-class_names = mlb.classes_
-for i, (labels, ts, probs) in enumerate(zip(decoded, timestamps, proba_matrix)):
-    row = {
-        "sample_index": i,
-        "audio_file": ts.get("file", ""),
-        "start": ts.get("start", ""),
-        "end": ts.get("end", ""),
-        "predicted_species": ", ".join(labels) if labels else ""
-    }
-    for cname, score in zip(class_names, probs):
-        row[f"score_{cname}"] = score
-    results.append(row)
+    results_df = pd.DataFrame(results)
 
-# Add this line to create the DataFrame
-results_df = pd.DataFrame(results)
-
-# %% Save to CSV
-csv_path = r"C:\Users\gbida\Projects\anurabird\results\predictions_with_timestamps_and_scores.csv"
-csv_path = get_unique_path(csv_path)
-results_df.to_csv(csv_path, index=False)
-print(f"Results saved to {csv_path}")
-
-# %%
+    # Save to CSV
+    os.makedirs(os.path.dirname(args.output_csv), exist_ok=True)
+    csv_path = get_unique_path(args.output_csv)
+    results_df.to_csv(csv_path, index=False)
+    print(f"Results saved to {csv_path}")
