@@ -9,32 +9,32 @@ Key contributions include:
 
 ## Installation instruction and reproduction of results
 
-1. Install [Conda](https://docs.conda.io/en/latest/)
-2. Clone this repository
+# 1. Install [Conda](https://docs.conda.io/en/latest/)
+# 2. Clone this repository
 ```bash
 git clone https://github.com/ElBatrasio/Frog-party_detector.git
 ```
-3. Create an environment and install requirements
+# 3. Create an environment and install requirements
 ```bash
 cd Frog-party_detector
 conda create -n Fp_d python=3.11 -y
 conda activate Fp_d
 pip install -r requirements.txt
 ```
-4. Extract embeddings
+# 4. Extract embeddings
 Extract embeddings using the BirdNET's V2.4 model. You need to specify the path to your audio files and the window duration (and overlap if needed). 
 ```bash
 python scripts/BirdNET_embeddings.py --input_folder "path/to/input" --segment_duration 3 --overlap 1 
 ```
-* IMPORTANT
+# * IMPORTANT
 The names of the folders must NOT contain spaces between words, use a low bar "_" instead.
 
-5. Train the model
+# 5. Train the model
 Train the MLP using embeddings as input. You have to specify just the path to the csv file containing the labels per each sample (unless you specified the output folder for the BirdNET_embeddings script to be another but the default). If the csv with samples is correctly structured the script will correctly append each sample with its corresponding multi-label. You can set the proportion of data destined to train, validation and testing; if not the default is 70% training and 15% validation and testing.
 ```bash
 python scripts/MLP_classifier.py --labels_csv path/to/labels.csv --train_ratio 0.6 --val_ratio 0.2 --test_ratio 0.2
 ```
-6. Predict on new data
+# 6. Predict on new data
 Use the model to predict in new data. You can add your data to the data/new_data folder inside the main Frog_party_detector folder which is the default folder, if not specify the input folder like in the embeddings extraction usage. You can manually set the threshold for decision making, if not the default is 0.5
 ```bash
 python scripts/model_loader.py --threshold 0.5
