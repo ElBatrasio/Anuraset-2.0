@@ -20,5 +20,10 @@ cd Frog-party_detector
 conda create -n Frog-party_detector python=3.11 -y
 conda activate Frog-party_detector
 pip install -r requirements.txt
+```
+4. Extract embeddings
+Extract embeddings using the BirdNET's V2.4 model. You need to specify the path to your audio files, the output path for the embeddings and the timestamp and the window duration (and overlap if needed)
  
-  
+```bash
+python scripts/BirdNET_embeddings.py --input_folder "path/to/input" --output_folder "path/to/output" --segment_duration 3 --overlap 1 
+```
