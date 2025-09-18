@@ -27,3 +27,8 @@ Extract embeddings using the BirdNET's V2.4 model. You need to specify the path 
 ```bash
 python scripts/BirdNET_embeddings.py --input_folder "path/to/input" --output_folder "path/to/output" --segment_duration 3 --overlap 1 
 ```
+* IMPORTANT
+The names of the folders must NOT contain spaces between words, use a low bar "_" instead.
+
+5. Train the model
+Train the MLP using embeddings as input. You have to specify both the path to the embeddings.
