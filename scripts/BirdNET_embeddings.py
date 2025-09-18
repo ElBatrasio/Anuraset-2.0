@@ -6,6 +6,7 @@ import os
 import sys
 import numpy as np
 import json
+import argparse
 
 
 def extract_embeddings_for_keras(input_folder, output_folder, segment_duration=3, overlap=0.0):
@@ -69,12 +70,20 @@ def extract_embeddings_for_keras(input_folder, output_folder, segment_duration=3
     print(f"Embeddings and timestamps saved to {output_folder}")
 
 
-# Example usage
+# Command-line interface
 if __name__ == "__main__":
-    input_folder = r"C:\Users\gbida\Projects\anuraset\datasets\test"
-    output_folder = r"results"
-    segment_duration = 3  # seconds
-    overlap = 1         # seconds, for 50% overlap
+    parser = argparse.ArgumentParser(
+        description="Extract BirdNET embeddings from audio files.")
+    parser.add_argument('--input_folder', type=str, required=True,
+                        help='Path to the folder containing audio files.')
+    parser.add_argument('--output_folder', type=str, required=True,
+                        help='Path to save the extracted embeddings.')
+    parser.add_argument('--segment_duration', type=int, default=3,
+                        help='Duration (in seconds) of each segment.')
+    parser.add_argument('--overlap', type=float, default=0.0,
+                        help='Overlap between segments (in seconds).')
+
+    args = parser.parse_args()
 
     extract_embeddings_for_keras(
-        input_folder, output_folder, segment_duration, overlap)
+        args.input_folder, args.output_folder, args.segment_duration, args.overlap)
